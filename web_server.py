@@ -1,3 +1,13 @@
+"""
+Web-server for an automatic translation service.
+Usage:
+fetch('http://localhost:8080', {
+    method: "POST", 
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({txt: `How are you?`})
+}).then( resp => resp.json() ).then( data => console.log(data) );
+"""
+
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import json
@@ -38,10 +48,18 @@ class MyServer(BaseHTTPRequestHandler):
                 json.dumps({'error': 'no txt key found in the json!'}))
             return
         else:
-            response = pipe(body['txt'])
+            response = [{}]
+            if content_len > 256:
+                content = body['txt'].split('. ')
+                parts = []
+                for part in content:
+                    parts.append(pipe(part)[0]['translation_text'])
+                response[0]['translation_text'] = '. '.join(parts)
+            else:
+                response = pipe(body['txt'])
 
         self.do_Response(
-            json.dumps({'translation_text': response[0]['translation_text']})
+            json.dumps(response[0]['translation_text'])
         )
 
     def do_Response(self, response, type = "text/html"):
