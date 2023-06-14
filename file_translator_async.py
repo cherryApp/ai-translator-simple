@@ -45,8 +45,25 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Optimize to mac m1
-device = torch.device(args.device)
-translate_pipe = pipeline("translation", model="Helsinki-NLP/opus-mt-tc-big-en-hu", device=device)
+pipes = []
+if args.device == 'cuda':
+    for index in range( torch.cuda.device_count() ):
+        pipes.append(
+            pipeline(
+                "translation", 
+                model="Helsinki-NLP/opus-mt-tc-big-en-hu", 
+                device=torch.device('cuda:'+str(index))
+            )
+        )
+else:
+    device = torch.device(args.device)
+    pipes.append(
+        pipeline(
+            "translation", 
+            model="Helsinki-NLP/opus-mt-tc-big-en-hu", 
+            device=device
+        )
+    )
 
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
 rel_path = args.file
@@ -81,36 +98,29 @@ def translator(content, translate_pipe):
 
 async def run_translate(start, count):
     translated = []
+    pipe = 0
     for index in range(start, start + count):
         row = {}
         for key in param_keys:
             if params[index][key] == '':
                 row[key] = ''
                 continue
-            row[key] = translator(params[index][key], translate_pipe)
+            if len(pipes) > 1:
+                pipe ^= 1
+            row[key] = translator(params[index][key], pipes[pipe])
         translated.append(row)
     
     file_name = './output/output_{}_{}.json'.format(start, count)
     with open(file_name, "w", encoding="utf-8") as temp:
         temp.write(json.dumps(translated, ensure_ascii=False))
 
-def get_pool_args(start, count):
-    return {
-        'params': params, 
-        'param_keys': param_keys, 
-        'translator': translator,
-        'translate_pipe': translate_pipe,
-        'start': start,
-        'count': count
-    }
-
 if __name__ == '__main__':
     start_time = time.perf_counter()
     
     loop = asyncio.get_event_loop()
-    for index in range(0, 180, 20):
-        loop.create_task(run_translate(index, 20))
-    loop.run_until_complete(run_translate(180, 20))
+    for index in range(0, 200):
+        loop.create_task(run_translate(index, 1))
+    loop.run_until_complete(run_translate(200, 201))
 
     finish_time = time.perf_counter()
     print("Program finished in {} seconds - using multiprocessing".format(finish_time-start_time))
