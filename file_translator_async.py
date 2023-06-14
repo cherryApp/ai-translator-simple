@@ -46,7 +46,13 @@ args = parser.parse_args()
 
 # Optimize to mac m1
 device = torch.device(args.device)
-translate_pipe = pipeline("translation", model="Helsinki-NLP/opus-mt-tc-big-en-hu", device=device)
+translate_pipe = pipeline(
+    "translation", 
+    model="Helsinki-NLP/opus-mt-tc-big-en-hu", 
+    num_workers=16,
+    batch_size=16,
+    device=device
+)
 
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
 rel_path = args.file
@@ -108,8 +114,8 @@ if __name__ == '__main__':
     start_time = time.perf_counter()
     
     loop = asyncio.get_event_loop()
-    for index in range(0, 180, 20):
-        loop.create_task(run_translate(index, 20))
+    # for index in range(0, 180, 20):
+    #     loop.create_task(run_translate(index, 20))
     loop.run_until_complete(run_translate(180, 20))
 
     finish_time = time.perf_counter()
