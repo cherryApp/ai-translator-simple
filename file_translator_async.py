@@ -217,10 +217,10 @@ def run_translate(start, count, pipe=0, batch_size=8, chunk_size=512):
             shapes += [[key, len(processed)]  for x in range(0, len(processed))]
             flat_dataset += processed
 
-    for out in tqdm(
-        pipes[pipe](KeyDataset(flat_dataset, "input"), batch_size=batch_size),
-        desc='Rows({}): '.format(len(flat_dataset))
-    ): translated.append(out)
+    with tqdm(total=len(flat_dataset), desc='Rows({}): '.format(len(flat_dataset))) as pbar:
+        for out in pipes[pipe](KeyDataset(flat_dataset, "input"), batch_size=batch_size): 
+            translated.append(out)
+            pbar.update(1)
 
 
     i = 0
@@ -238,12 +238,6 @@ def run_translate(start, count, pipe=0, batch_size=8, chunk_size=512):
         temp.write(json.dumps(output_list, ensure_ascii=False))
 
     return True
-        
-            
-
-
-
-    
 
 def run_translate_old(start, count, pipe = 0, batch_size = 8, chunk_size=512):
 
@@ -302,6 +296,9 @@ def run_translate_old(start, count, pipe = 0, batch_size = 8, chunk_size=512):
     return True
 
 if __name__ == '__main__':
+    # print(params[16382:16384])
+    # sys.exit()
+
     print("Start translate: ")
     print("Device: ", args.device)
     print("Cuda device: ", args.cudacore)
@@ -323,10 +320,5 @@ if __name__ == '__main__':
     print("---")
 
 """
-1. Eat a balanced and nutritious diet: Make sure your meals are inclusive of a variety of fruits and vegetables, lean protein, whole grains, and healthy fats. This helps to provide your body with the essential nutrients to function at its best and can help prevent chronic diseases.
-
-2. Engage in regular physical activity: Exercise is crucial for maintaining strong bones, muscles, and cardiovascular health. Aim for at least 150 minutes of moderate aerobic exercise or 75 minutes of vigorous exercise each week.
-
-3. Get enough sleep: Getting enough quality sleep is crucial for physical and mental well-being. It helps to regulate mood, improve cognitive function, and supports healthy growth and immune function. Aim for 7-9 hours of sleep each night.
-
+Here is an implementation of a red-black tree in C++:\n\n```\n#include <iostream>\n\nusing namespace std;\n\nenum Color {RED, BLACK};\n\nstruct Node {\n    int val;\n    Color color;\n    Node *left, *right, *parent;\n    \n    Node() {}\n    \n    Node(int v, Color c) {\n        val = v;\n        color = c;\n        left = right = parent = NULL;\n    }\n};\n\nclass RedBlackTree {\n    private:\n        Node *root;\n        \n    public:\n        RedBlackTree() { root = NULL; }\n        \n        /* Helper functions */\n        Node* grandparent(Node *n) {\n            if (n && n->parent) { return n->parent->parent; }\n            else { return NULL; }\n        }\n        \n        Node* uncle(Node *n) {\n            Node *g = grandparent(n);\n            if (!g) { return NULL; }\n            if (n->parent == g->left) { return g->right; }\n            else { return g->left; }\n        }\n        \n        Node* sibling(Node *n) {\n            if (!n || !n->parent) { return NULL; }\n            if (n == n->parent->left) { return n->parent->right; }\n            else { return n->parent->left; }\n        }\n        \n        void fix_tree(Node *n) {\n            while (n != root && n->color == RED && n->parent->color == RED) {\n                Node *p = n->parent;\n                Node *g = grandparent(n);\n                Node *u = uncle(n);\n                \n                if (u && u->color == RED) {\n                    p->color = BLACK;\n                    u->color = BLACK;\n                    g->color = RED;\n                    n = g;\n                } else {\n                    if (p == g->left) {\n                        if (n == p->right) {\n                            n = p;\n                            left_rotate(n);\n                        }\n                        p->color = BLACK;\n                        g->color = RED;\n                        right_rotate(g);\n                    } else {\n                        if (n == p->left) {\n                            n = p;\n                            right_rotate(n);\n                        }\n                        p->color = BLACK;\n                        g->color = RED;\n                        left_rotate(g);\n                    }\n                }\n            }\n            root->color = BLACK;\n        }\n        \n        void left_rotate(Node *n) {\n            Node *r = n->right;\n            n->right = r->left;\n            if (r->left) { r->left->parent = n; }\n            r->parent = n->parent;\n            if (!n->parent) { root = r; }\n            else if (n == n->parent->left) { n->parent->left = r; }\n            else { n->parent->right = r; }\n            r->left = n;\n            n->parent = r;\n        }\n        \n        void right_rotate(Node *n) {\n            Node *l = n->left;\n            n->left = l->right;\n            if (l->right) { l->right->parent = n; }\n            l->parent = n->parent;\n            if (!n->parent) { root = l; }\n            else if (n == n->parent->left) { n->parent->left = l; }\n            else { n->parent->right = l; }\n            l->right = n;\n            n->parent = l;\n        }\n        \n        void insert_node(int val) {\n            Node *n = new Node(val, RED);\n            if (!root) { root = n; }\n            else {\n                Node *current = root;\n                Node *parent = NULL;\n                \n                while (current) {\n                    parent = current;\n                    if (val < current->val) { current = current->left; }\n                    else { current = current->right; }\n                }\n                n->parent = parent;\n                if (val < parent->val) { parent->left = n; }\n                else { parent->right = n; }\n                fix_tree(n);\n            }\n        }\n        \n        Node* search_node(int val) {\n            Node *current = root;\n            while (current && current->val != val) {\n                if (val < current->val) { current = current->left; }\n                else { current = current->right; }\n            }\n            return current;\n        }\n        \n        void inorder(Node *n) {\n            if (!n) { return; }\n            inorder(n->left);\n            cout << n->val << \" \";\n            inorder(n->right);\n        }\n        \n        void print_tree() {\n            inorder(root);\n            cout << endl;\n        }\n};\n```\n\nThis implementation includes the insertion of nodes, searching for nodes, and printing the tree using an inorder traversal. The fix_tree function is responsible for maintaining the red-black balance after each insert.
 """
