@@ -1,23 +1,16 @@
 import os
 import json
 import argparse
-import codecs
 import sys
 import time
-import math
-import asyncio
 import tqdm
 import nltk.data
 from functools import reduce
 
-from timebudget import timebudget
-from multiprocessing import Process, Pool, freeze_support
 import torch
 from transformers import pipeline
 from transformers.pipelines.pt_utils import KeyDataset
-from datasets import Dataset
 from tqdm.auto import tqdm
-import pandas as pd
 
 sentence_tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
@@ -130,52 +123,6 @@ param_keys = ['instruction', 'input', 'output']
 
 translated = []
 
-def translator(content, translate_pipe):
-    current_len = 0
-    if len(content) > 256:
-        content = content.split('.')
-        parts = []
-        buffer = ''
-        for part in content:
-            if len(buffer) + len(part) > 256:
-                parts.append(translate_pipe(buffer)[0]['translation_text'])
-                buffer = ''
-            else:
-                buffer += part + '.'
-        if len(buffer) > 0:
-            parts.append(translate_pipe(buffer)[0]['translation_text'])
-        return ''.join(parts)
-    return translate_pipe(content)[0]['translation_text']
-
-async def run_translate_batch(start, count):
-    translated = []
-    pipe = 0
-    for index in range(start, start + count):
-        row = {}
-        for key in param_keys:
-            if params[index][key] == '':
-                row[key] = ''
-                continue
-            # if len(pipes) > 1:
-                # pipe ^= 1
-            row[key] = translator(params[index][key], pipes[pipe])
-        translated.append(row)
-    
-    file_name = './output/output_{}_{}.json'.format(start, count)
-    with open(file_name, "w", encoding="utf-8") as temp:
-        temp.write(json.dumps(translated, ensure_ascii=False))
-
-def splitter(size = 1000, datarow = {}):
-    splitted = []
-    base = {'instruction': '', 'input': '', 'output': ''}
-    if len(datarow['instruction']) > size:
-        splitted.append(base.copy())
-        splitted.append(base.copy())
-        sentences = datarow['instruction'].split('. ')
-        splitted[0]['instruction'] = '. '.join(sentences[0:math.floor(len(sentences)/2)])
-        splitted[1]['instruction'] = '. '.join(sentences[math.floor(len(sentences)/2):])
-
-
 def preprocessor(raw_text = '', size=1000):
     if len(raw_text) <= size:
         return [{'input': raw_text}]
@@ -236,62 +183,6 @@ def run_translate(start, count, pipe=0, batch_size=8, chunk_size=512):
 
     with open(file_name, "w", encoding="utf-8") as temp:
         temp.write(json.dumps(output_list, ensure_ascii=False))
-
-    return True
-
-def run_translate_old(start, count, pipe = 0, batch_size = 8, chunk_size=512):
-
-    dataset = params[start:(start + count)]
-
-    translated = []
-
-    instructions = []
-
-    inputs = []
-
-    outputs = []
-
-    file_name = './output/output_{}_{}.json'.format(start, count)
-
-    for out in tqdm(
-        pipes[pipe](KeyDataset(dataset, "instruction"), batch_size=batch_size, max_length=1024),
-        desc='Instructions({}): '.format(len(dataset))
-    ):
-        instructions.append(out)
-
-    for out in tqdm(
-        pipes[pipe](KeyDataset(dataset, "input"), batch_size=batch_size, max_length=1024),
-        desc='Inputs({}): '.format(len(dataset))
-    ):
-        inputs.append(out)
-
-    for out in tqdm(
-        pipes[pipe](KeyDataset(dataset, "output"), batch_size=batch_size, max_length=1024),
-        desc='Outputs({}): '.format(len(dataset))
-    ):
-        outputs.append(out)
-
-    for index in range(0, count):
-        row = {}
-        try:
-            row['instruction'] = instructions[index][0]["translation_text"]
-        except IndexError:
-            row['instruction'] = ''
-
-        try:
-            row['input'] = inputs[index][0]["translation_text"]
-        except IndexError:
-            row['input'] = ''
-
-        try:
-            row['output'] = outputs[index][0]["translation_text"]
-        except IndexError:
-            row['output'] = ''
-
-        translated.append(row)
-
-    with open(file_name, "w", encoding="utf-8") as temp:
-        temp.write(json.dumps(translated, ensure_ascii=False))
 
     return True
 
