@@ -7,3 +7,7 @@ Simple, AI-based english to hungarian translator.
 
 ### Measure Consumption
 `sudo powermetrics -i 2000 --samplers cpu_power -a --hide-cpu-duty-cycle`
+
+## Ubuntu
+### Start Translation
+`python3 file_translator_async.py -f output/alpaca_data_cleaned.json -d cuda -c 0 -s 100 -n 400 -b 24 -cs 256`
