@@ -1,11 +1,9 @@
 import os
 import json
 import argparse
-import sys
 import time
 import tqdm
 import nltk.data
-from functools import reduce
 
 import torch
 from transformers import pipeline
