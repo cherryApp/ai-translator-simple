@@ -23,4 +23,4 @@ Simple, AI-based english to hungarian translator.
 `pip install -r requirements.txt`
 
 ### Start Translation
-`python file_translator_async.py -f output/alpaca_data_cleaned.json -d cpu -c 0 -s 100 -n 400 -b 8 -cs 256`
+`python file_translator_async.py -f output\alpaca_data_cleaned.json -d cpu -c 0 -s 100 -n 400 -b 8 -cs 256`

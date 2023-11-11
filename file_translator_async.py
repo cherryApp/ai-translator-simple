@@ -1,6 +1,7 @@
 import os
 import json
 import argparse
+import sys
 import time
 import tqdm
 import nltk.data
@@ -116,6 +117,8 @@ json_file = open(abs_file_path)
 content = json_file.read()
 
 params = json.loads(content)
+
+json_file.close()
 
 param_keys = ['instruction', 'input', 'output']
 
